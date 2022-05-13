@@ -1,0 +1,10 @@
+{
+  "apiVersion": "9",
+  "displayName": "Native",
+  "meta": {
+    "metaVersion": "3.0.0"
+  },
+  "path": "native",
+  "releaseType": "Canary1",
+  "version": "5.0.1.0"
+}

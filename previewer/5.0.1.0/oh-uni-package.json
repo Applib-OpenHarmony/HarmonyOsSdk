@@ -1,0 +1,10 @@
+{
+  "apiVersion": "9",
+  "displayName": "Previewer",
+  "meta": {
+    "metaVersion": "3.0.0"
+  },
+  "path": "previewer",
+  "releaseType": "Canary1",
+  "version": "5.0.1.0"
+}

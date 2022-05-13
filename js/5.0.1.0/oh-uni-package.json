@@ -1,0 +1,10 @@
+{
+  "apiVersion": "9",
+  "displayName": "Js",
+  "meta": {
+    "metaVersion": "3.0.0"
+  },
+  "path": "js",
+  "releaseType": "Canary1",
+  "version": "5.0.1.0"
+}

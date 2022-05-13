@@ -1,0 +1,5 @@
+{
+  "OpenSLES": "SystemCapability.Multimedia.Audio.Core",
+  "hiappevent_ndk": "SystemCapability.HiviewDFX.HiAppEvent",
+  "hilog_ndk": "SystemCapability.HiviewDFX.HiLog"
+}
