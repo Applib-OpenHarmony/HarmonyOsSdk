@@ -1,0 +1,10 @@
+{
+  "apiVersion": "8",
+  "displayName": "Js",
+  "meta": {
+    "metaVersion": "3.0.0"
+  },
+  "path": "js",
+  "releaseType": "Beta1",
+  "version": "3.1.0.0"
+}

@@ -1,0 +1,158 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var path = require('path')
+var fs = require('fs')
+
+const red = '\u001b[31m';
+const reset = '\u001b[39m';
+
+function deleteFolderRecursive(url) {
+  let files = [];
+  if (fs.existsSync(url)) {
+    files = fs.readdirSync(url);
+    files.forEach(function(file) {
+      const curPath = path.join(url, file);
+      if (fs.statSync(curPath).isDirectory()) {
+        deleteFolderRecursive(curPath);
+      } else {
+        fs.unlinkSync(curPath);
+      }
+    });
+    fs.rmdir(url, function(err) {});
+  }
+}
+
+function readManifest(manifestFilePath) {
+  let manifest = {};
+  try {
+    if (fs.existsSync(manifestFilePath)) {
+      const jsonString = fs.readFileSync(manifestFilePath).toString();
+      manifest = JSON.parse(jsonString);
+    } else if (process.env.aceConfigPath && fs.existsSync(process.env.aceConfigPath)) {
+      buildManifest(manifest, process.env.aceConfigPath);
+   } else {
+    throw Error('\u001b[31m' + 'ERROR: the manifest.json or config.json is lost.' + '\u001b[39m')
+      .message;
+   }
+  } catch (e) {
+    throw Error('\u001b[31m' + 'ERROR: the manifest.json or config.json file format is invalid.' +
+      '\u001b[39m').message;
+  }
+  return manifest;
+}
+
+
+function buildManifest(manifest, aceConfigPath) {
+  try {
+    const configJson =  JSON.parse(fs.readFileSync(aceConfigPath).toString());
+    const srcPath = process.env.srcPath;
+    manifest.type = process.env.abilityType;
+    manifest.pages = []
+    if (manifest.type === 'form') {
+      if (configJson.module && configJson.module.abilities) {
+        manifest.pages = getForms(configJson, srcPath);
+      } else {
+        throw Error('\u001b[31m'+
+          'EERROR: the config.json file miss keyword module || module[abilities].' +
+          '\u001b[39m').message;
+      }
+      manifest.minPlatformVersion = configJson.app.apiVersion.compatible;
+    }
+  } catch (e) {
+    throw Error('\u001b[31m' + 'ERROR: the config.json file is lost or format is invalid.' +
+      '\u001b[39m').message;
+  }
+}
+
+function getForms(configJson, srcPath) {
+  const pages = [];
+  for (const ability of configJson.module.abilities){
+    if (ability.srcPath === srcPath) {
+      readForms(ability, pages);
+      break;
+    }
+  }
+  return pages;
+}
+
+function readForms(ability, pages) {
+  if (ability.forms) {
+    for (const form of ability.forms){
+      if (form.src) {
+        pages.push(form.src);
+      }
+    }
+  } else {
+    throw Error('\u001b[31m' +`ERROR: the ${ability} in config.json file  miss forms.' +
+      '\u001b[39m`).message;
+  }
+}
+
+function loadEntryObj(projectPath, device_level, abilityType, manifestFilePath) {
+  let entryObj = {};
+  switch (abilityType) {
+    case 'page':
+      const appJSPath = path.resolve(projectPath, 'app.js');
+      if (device_level === 'card') {
+        entryObj = addPageEntryObj(readManifest(manifestFilePath), projectPath);
+      } else {
+        if (!fs.existsSync(appJSPath)) {
+          throw Error(red + 'ERROR: missing app.js' + reset).message;
+        }
+        entryObj['./app'] = path.resolve(projectPath, './app.js?entry');
+      }
+      break;
+    case 'form':
+      entryObj = addPageEntryObj(readManifest(manifestFilePath), projectPath);
+      entryObj[`./${abilityType}`] =  path.resolve(projectPath, `./${abilityType}.js?entry`);
+      break;
+    default:
+      entryObj[`./${abilityType}`] =  path.resolve(projectPath, `./${abilityType}.js?entry`);
+      break;
+  }
+  return entryObj;
+}
+
+function addPageEntryObj(manifest, projectPath) {
+  let entryObj = {};
+  const pages = manifest.pages;
+  if (pages === undefined) {
+    throw Error('ERROR: missing pages').message;
+  }
+  pages.forEach((element) => {
+    const sourcePath = element;
+    const hmlPath = path.join(projectPath, sourcePath + '.hml');
+    const aceSuperVisualPath = process.env.aceSuperVisualPath || '';
+    const visualPath = path.join(aceSuperVisualPath, sourcePath + '.visual');
+    const isHml = fs.existsSync(hmlPath);
+    const isVisual = fs.existsSync(visualPath);
+    if (isHml && isVisual) {
+      throw Error(red + 'ERROR: ' + sourcePath + ' cannot both have hml && visual').message;
+    } else if (isHml) {
+      entryObj['./' + element] = path.resolve(projectPath, './' + sourcePath + '.hml?entry');
+    } else if (isVisual) {
+      entryObj['./' + element] = path.resolve(aceSuperVisualPath, './' + sourcePath +
+        '.visual?entry');
+    }
+  })
+  return entryObj;
+}
+
+module.exports = {
+  deleteFolderRecursive: deleteFolderRecursive,
+  readManifest: readManifest,
+  loadEntryObj: loadEntryObj
+};

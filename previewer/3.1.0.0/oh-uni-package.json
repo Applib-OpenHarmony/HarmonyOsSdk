@@ -1,0 +1,10 @@
+{
+  "apiVersion": "8",
+  "displayName": "Previewer",
+  "meta": {
+    "metaVersion": "3.0.0"
+  },
+  "path": "previewer",
+  "releaseType": "Beta1",
+  "version": "3.1.0.0"
+}
